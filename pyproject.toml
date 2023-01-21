@@ -13,6 +13,7 @@ gunicorn = "^20.1.0"
 python-dotenv = "^0.21.0"
 flake8 = "^6.0.0"
 psycopg2-binary = "^2.9.5"
+validators = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 cowsay = "^5.0"

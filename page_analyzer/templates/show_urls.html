@@ -18,7 +18,7 @@
   </button>
   <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link " href="/urls">Сайты</a></li>
+        <li class="nav-item"><a class="nav-link " href="{{ url_for(show_urls) }}">Сайты</a></li>
       </ul>
     </ul>
   </div>
@@ -30,18 +30,35 @@
 
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
-      <h1></h1>
+      <h1>Сайты</h1>
 
     
-<div class="row">
-  <div class="col-12 col-md-10 col-lg-8 mx-auto border rounded-3 bg-light p-5">
-    <h1 class="display-3">Анализатор страниц</h1>
-    <p class="lead">Бесплатно проверяйте сайты на SEO пригодность</p>
-    <form action="{{ url_for(show_urls) }}" method="post" class="d-flex justify-content-center" required>
-    <input type="text" name="url" placeholder="https://www.example.com"value=""  class="form-control form-control-lg">
-    <input type="submit" class="btn btn-primary  btn-lg ms-3 px-5 text-uppercase mx-3" value="Проверить">
-</form>
-  </div>
+<div class="table-responsive">
+  <table class="table table-bordered table-hover text-nowrap" data-test="urls">
+    <tbody>
+      <tr>
+        <th>ID</th>
+        <th>Имя</th>
+        <th>Последняя проверка</th>
+        <th>Код ответа</th>
+      </tr>
+      
+      {% for item in data %}  
+      <tr>
+        <td>{{ item[0] }}</td>
+        <td>
+          <a href="/urls/{{ item[0] }}">
+            {{ item[1] }}
+          </a>
+        </td>
+        
+        <td></td>
+        <td></td>  
+          
+      </tr>
+      
+    </tbody>
+  </table>
 </div>
 
     </div>
@@ -53,3 +70,8 @@
     </div>
   </div>
 </footer>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+  </body>
+</html>
