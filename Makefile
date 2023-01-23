@@ -7,3 +7,6 @@ start:
 
 lint:
 		poetry run flake8 page_analyzer
+
+postgres:
+		sudo service postgresql start

@@ -26,11 +26,15 @@
 
   </header>
   
-  
+  {% if message %}
+    {% for category, mess in message %}
+    <div class="alert {{ category }}" role="alert">{{ mess }}</div>
+    {% endfor %}
+  {% endif %}
 
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
-      <h1>Сайт: https://on.soundcloud.com</h1>
+      <h1>Сайт: {{ data[1] }}</h1>
 
     
   <div class="table-responsive">
