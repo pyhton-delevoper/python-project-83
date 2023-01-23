@@ -26,11 +26,13 @@
 
   </header>
   
+  <div>
   {% if message %}
     {% for category, mess in message %}
-      <div class="alert {{ category }}" role="alert">{{ mess }}</div>
+      <div class="alert {{ category }}">{{ mess }}</div>
     {% endfor %}
   {% endif %}
+  </div>
 
   <main class="flex-grow-1">
     <div class="container-lg mt-3">
