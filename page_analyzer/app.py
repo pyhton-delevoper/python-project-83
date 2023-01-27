@@ -1,6 +1,7 @@
 import psycopg2
 import requests
 import os
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 from validators.url import url as valid_url
@@ -89,8 +90,15 @@ def check_url(id):
             flash('Произошла ошибка при проверке', 'alert-danger')
             return redirect(url_for('watch_url', id=id))
 
-        cur.execute('''INSERT INTO url_checks (url_id, status_code, created_at)
-                       VALUES (%s, %s, %s);''', [id, status_code, created_at])
+        html = requests.get(url).text
+        parsed_html = BeautifulSoup(html)
+        h1 = parsed_html.h1.string
+        title = parsed_html.title.string
+        desc = parsed_html.find('meta', attrs={'name': 'description'})['content']
+        cur.execute('''INSERT INTO url_checks
+                       (url_id, status_code, h1, title, description, created_at)
+                       VALUES (%s, %s, %s, %s, %s, %s);''',
+                       [id, status_code, h1, title, desc, created_at])
         connect.commit()
     flash('Страница успешно проверена', 'alert-success')
     return redirect(url_for('watch_url', id=id), 302)
