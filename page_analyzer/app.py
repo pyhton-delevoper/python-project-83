@@ -1,4 +1,5 @@
 import psycopg2
+import requests
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse
@@ -39,8 +40,8 @@ def show_urls():
 
     url = request.form.get('url')
     if not valid_url(url):
-        message = [('alert-danger', 'Некорректный URL')]
-        return render_template('analyze.html', message=message, wrong_url=url)
+        error = [('alert-danger', 'Некорректный URL')]
+        return render_template('analyze.html', message=error, wrong_url=url)
 
     parsed_url = urlparse(url)
     normal_url = parsed_url.scheme + '://' + parsed_url.netloc
@@ -49,14 +50,15 @@ def show_urls():
         url_id = cur.fetchone()[0]
 
         if url_id:
-            flash('Такой адрес уже существует', 'alert-info')
-            return redirect(url_for('watch_url', id=url_id))
+            flash('Страница уже существует', 'alert-info')
+            return redirect(url_for('watch_url', id=url_id), 200)
 
-        created_at = datetime.now()
+        created_at = datetime.now().date()
         cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s);',
-                    [normal_url, created_at.date()])
+                    [normal_url, created_at])
+        connect.commit()
     flash('Страница успешно добавлена', 'alert-success')
-    return redirect(url_for('watch_url', id=url_id))
+    return redirect(url_for('watch_url', id=url_id), 302)
 
 
 @app.route('/urls/<int:id>')
@@ -64,5 +66,31 @@ def watch_url(id):
     with connect.cursor() as cur:
         cur.execute('SELECT * FROM urls WHERE id = %s;', [id])
         data = cur.fetchone()
+        cur.execute('''SELECT * FROM url_checks WHERE url_id = %s
+                       ORDER BY id DESC;''', [id])
+        checks = cur.fetchall()
     message = get_flashed_messages(with_categories=True)
-    return render_template('watch_url.html', data=data, message=message)
+    return render_template(
+        'watch_url.html', data=data, checks=checks, message=message
+        )
+
+
+@app.post('/urls/<int:id>/checks')
+def check_url(id):
+    created_at = datetime.now().date()
+    with connect.cursor() as cur:
+        cur.execute('SELECT name FROM urls WHERE id = %s;', [id])
+        url = cur.fetchone()[0]
+
+        try:
+            status_code = requests.get(url, timeout=1).status_code
+            status_code == requests.codes.ok
+        except Exception:
+            flash('Произошла ошибка при проверке', 'alert-danger')
+            return redirect(url_for('watch_url', id=id))
+
+        cur.execute('''INSERT INTO url_checks (url_id, status_code, created_at)
+                       VALUES (%s, %s, %s);''', [id, status_code, created_at])
+        connect.commit()
+    flash('Страница успешно проверена', 'alert-success')
+    return redirect(url_for('watch_url', id=id), 302)
