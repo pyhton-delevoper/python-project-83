@@ -82,23 +82,22 @@ def check_url(id):
     with connect.cursor() as cur:
         cur.execute('SELECT name FROM urls WHERE id = %s;', [id])
         url = cur.fetchone()[0]
-
         try:
             status_code = requests.get(url, timeout=1).status_code
             status_code == requests.codes.ok
         except Exception:
             flash('Произошла ошибка при проверке', 'alert-danger')
             return redirect(url_for('watch_url', id=id))
-
         html = requests.get(url).text
-        parsed_html = BeautifulSoup(html)
-        h1 = parsed_html.h1.string
-        title = parsed_html.title.string
-        desc = parsed_html.find('meta', attrs={'name': 'description'})['content']
-        cur.execute('''INSERT INTO url_checks
-                       (url_id, status_code, h1, title, description, created_at)
-                       VALUES (%s, %s, %s, %s, %s, %s);''',
-                       [id, status_code, h1, title, desc, created_at])
+        soup = BeautifulSoup(html)
+        h1 = soup.h1.string
+        title = soup.title.string
+        desc = soup.find('meta', attrs={'name': 'description'})['content']
+        cur.execute('''
+                INSERT INTO url_checks
+                (url_id, status_code, h1, title, description, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s);
+                ''', [id, status_code, h1, title, desc, created_at])
         connect.commit()
     flash('Страница успешно проверена', 'alert-success')
     return redirect(url_for('watch_url', id=id), 302)
