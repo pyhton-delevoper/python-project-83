@@ -48,16 +48,18 @@ def show_urls():
     normal_url = parsed_url.scheme + '://' + parsed_url.netloc
     with connect.cursor() as cur:
         cur.execute('SELECT id FROM urls WHERE name = %s;', [normal_url])
-        url_id = cur.fetchone()[0]
+        url_id = cur.fetchone()
 
         if url_id:
             flash('Страница уже существует', 'alert-info')
-            return redirect(url_for('watch_url', id=url_id), 200)
+            return redirect(url_for('watch_url', id=url_id[0]), 200)
 
         created_at = datetime.now().date()
         cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s);',
                     [normal_url, created_at])
         connect.commit()
+        cur.execute('SELECT id FROM urls WHERE name = %s;', [normal_url])
+        url_id = cur.fetchone()[0]
     flash('Страница успешно добавлена', 'alert-success')
     return redirect(url_for('watch_url', id=url_id), 302)
 
@@ -72,8 +74,8 @@ def watch_url(id):
         checks = cur.fetchall()
     message = get_flashed_messages(with_categories=True)
     return render_template(
-        'watch_url.html', data=data, checks=checks, message=message
-        )
+               'watch_url.html', data=data, checks=checks, message=message
+            )
 
 
 @app.post('/urls/<int:id>/checks')
