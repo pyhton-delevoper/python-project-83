@@ -91,7 +91,7 @@ def check_url(id):
             flash('Произошла ошибка при проверке', 'alert-danger')
             return redirect(url_for('watch_url', id=id))
         html = requests.get(url).text
-        soup = BeautifulSoup(html)
+        soup = BeautifulSoup(html, features="html.parser")
         h1 = soup.h1.string
         title = soup.title.string
         desc = soup.find('meta', attrs={'name': 'description'})['content']
