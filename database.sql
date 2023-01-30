@@ -1,3 +1,5 @@
+CREATE DATABASE page_analyzer;
+
 CREATE TABLE urls (
     id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(255),

@@ -52,7 +52,7 @@ def show_urls():
 
         if url_id:
             flash('Страница уже существует', 'alert-info')
-            return redirect(url_for('watch_url', id=url_id[0]), 200)
+            return redirect(url_for('watch_url', id=url_id[0]), 302)
 
         created_at = datetime.now().date()
         cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s);',
@@ -89,7 +89,7 @@ def check_url(id):
             status_code == requests.codes.ok
         except Exception:
             flash('Произошла ошибка при проверке', 'alert-danger')
-            return redirect(url_for('watch_url', id=id))
+            return redirect(url_for('watch_url', id=id), 302)
         html = requests.get(url).text
         soup = BeautifulSoup(html, features="html.parser")
         h1 = soup.h1.string
