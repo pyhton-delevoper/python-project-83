@@ -103,3 +103,7 @@ def check_url(id):
         connect.commit()
     flash('Страница успешно проверена', 'alert-success')
     return redirect(url_for('watch_url', id=id), 302)
+
+
+if __name__ == '__main__':
+   app.run(host='0.0.0.0', port=8000)
