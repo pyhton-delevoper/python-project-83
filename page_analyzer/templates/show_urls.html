@@ -57,9 +57,8 @@
             {{ item[1] }}
           </a>
         </td>        
-        <td></td>
-        <td></td>  
-          
+          <td>{{ item[2] if item[2] else '' }}</td>
+          <td>{{ item[3] if item[3] else '' }}</td>         
       </tr>
       {% endfor %}
       

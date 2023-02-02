@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 from validators.url import url as valid_url
+from werkzeug.exceptions import HTTPException
 from datetime import datetime
 from flask import (Flask,
                    render_template,
@@ -24,6 +25,11 @@ db_url = os.getenv('DATABASE_URL')
 connect = psycopg2.connect(db_url)
 
 
+@app.errorhandler(HTTPException)
+def handle_bad_request(e):
+    return render_template('404.html'), 404
+
+
 @app.route('/')
 def analyze_url():
     messages = get_flashed_messages(with_categories=True)
@@ -35,7 +41,12 @@ def analyze_url():
 def show_urls():
     if request.method == 'GET':
         with connect.cursor() as cur:
-            cur.execute('SELECT * FROM urls ORDER BY created_at;')
+            cur.execute('''
+                    select urls.id, name, max(url_checks.created_at)
+                    as created_at, status_code from urls left join url_checks
+                    on urls.id = url_id group by urls.id, urls.name, status_code
+                    order by id;
+                ''')
             data = cur.fetchall()
         return render_template('show_urls.html', data=data)
 
@@ -85,16 +96,18 @@ def check_url(id):
         cur.execute('SELECT name FROM urls WHERE id = %s;', [id])
         url = cur.fetchone()[0]
         try:
-            status_code = requests.get(url, timeout=1).status_code
-            status_code == requests.codes.ok
+            response = requests.get(url, timeout=1)
+            response.raise_for_status()
         except Exception:
             flash('Произошла ошибка при проверке', 'alert-danger')
             return redirect(url_for('watch_url', id=id), 302)
-        html = requests.get(url).text
+        status_code = response.status_code
+        html = response.text
         soup = BeautifulSoup(html, features="html.parser")
-        h1 = soup.h1.string
-        title = soup.title.string
-        desc = soup.find('meta', attrs={'name': 'description'})['content']
+        h1 = soup.h1.text if soup.h1 else ''
+        title = soup.title.text if soup.title else ''
+        desc = soup.find('meta', attrs={'name': 'description'})
+        desc = desc.get('content') if desc else ''
         cur.execute('''
                 INSERT INTO url_checks
                 (url_id, status_code, h1, title, description, created_at)
@@ -103,7 +116,3 @@ def check_url(id):
         connect.commit()
     flash('Страница успешно проверена', 'alert-success')
     return redirect(url_for('watch_url', id=id), 302)
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.getenv('PORT'))
