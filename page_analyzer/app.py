@@ -43,8 +43,9 @@ def show_urls():
         with connect.cursor() as cur:
             cur.execute('''
                     select urls.id, name, max(url_checks.created_at)
-                    as created_at, status_code from urls left join url_checks
-                    on urls.id = url_id group by urls.id, urls.name, status_code
+                    as created_at, status_code from urls
+                    left join url_checks on urls.id = url_id
+                    group by urls.id, urls.name, status_code
                     order by id;
                 ''')
             data = cur.fetchall()
