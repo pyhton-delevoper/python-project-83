@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from urllib.parse import urlparse
 from validators.url import url as valid_url
-from werkzeug.exceptions import HTTPException
 from datetime import datetime
 from flask import (Flask,
                    render_template,
@@ -25,8 +24,8 @@ db_url = os.getenv('DATABASE_URL')
 connect = psycopg2.connect(db_url)
 
 
-@app.errorhandler(HTTPException)
-def handle_bad_request(e):
+@app.errorhandler(404)
+def page_not_found(e):
     return render_template('404.html'), 404
 
 
@@ -61,7 +60,6 @@ def show_urls():
     with connect.cursor() as cur:
         cur.execute('SELECT id FROM urls WHERE name = %s;', [normal_url])
         url_id = cur.fetchone()
-
         if url_id:
             flash('Страница уже существует', 'alert-info')
             return redirect(url_for('watch_url', id=url_id[0]), 302)
@@ -81,6 +79,9 @@ def watch_url(id):
     with connect.cursor() as cur:
         cur.execute('SELECT * FROM urls WHERE id = %s;', [id])
         data = cur.fetchone()
+        if not data:
+            return render_template('404.html'), 404
+
         cur.execute('''SELECT * FROM url_checks WHERE url_id = %s
                        ORDER BY id DESC;''', [id])
         checks = cur.fetchall()
