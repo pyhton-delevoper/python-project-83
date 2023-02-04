@@ -33,8 +33,8 @@ def analyze_url():
     messages = get_flashed_messages(with_categories=True)
     url = ''
     return render_template('analyze.html',
-                            messages=messages,
-                            wrong_url=url), 200
+                           messages=messages,
+                           wrong_url=url), 200
 
 
 @app.route('/urls', methods=['GET', 'POST'])
@@ -57,18 +57,18 @@ def show_urls():
     if not valid_url(url):
         error = [('alert-danger', 'Неккоректный URL')]
         return render_template('analyze.html',
-                                message=error,
-                                wrong_url=url), 422
+                               message=error,
+                               wrong_url=url), 422
     elif len(url) > 255:
         error = [('alert-danger', 'URL превышает 255 символов')]
         return render_template('analyze.html',
-                                message=error,
-                                wrong_url=url), 422
+                               message=error,
+                               wrong_url=url), 422
 
     parsed_url = urlparse(url)
     normal_url = parsed_url.scheme + '://' + parsed_url.netloc
     with connect.cursor() as cur:
-        cur.execute('''SELECT id FROM urls 
+        cur.execute('''SELECT id FROM urls
                        WHERE name = %s;''', [normal_url])
         url_id = cur.fetchone()
         if url_id:
