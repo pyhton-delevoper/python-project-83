@@ -21,7 +21,6 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY')
 
 db_url = os.getenv('DATABASE_URL')
-connect = psycopg2.connect(db_url)
 
 
 @app.errorhandler(404)
@@ -33,11 +32,14 @@ def page_not_found(e):
 def analyze_url():
     messages = get_flashed_messages(with_categories=True)
     url = ''
-    return render_template('analyze.html', messages=messages, wrong_url=url)
+    return render_template('analyze.html',
+                            messages=messages,
+                            wrong_url=url), 200
 
 
 @app.route('/urls', methods=['GET', 'POST'])
 def show_urls():
+    connect = psycopg2.connect(db_url)
     if request.method == 'GET':
         with connect.cursor() as cur:
             cur.execute('''
@@ -48,17 +50,26 @@ def show_urls():
                     order by id;
                 ''')
             data = cur.fetchall()
-        return render_template('show_urls.html', data=data)
+        connect.close()
+        return render_template('show_urls.html', data=data), 200
 
     url = request.form.get('url')
     if not valid_url(url):
-        error = [('alert-danger', 'Некорректный URL')]
-        return render_template('analyze.html', message=error, wrong_url=url)
+        error = [('alert-danger', 'Неккоректный URL')]
+        return render_template('analyze.html',
+                                message=error,
+                                wrong_url=url), 422
+    elif len(url) > 255:
+        error = [('alert-danger', 'URL превышает 255 символов')]
+        return render_template('analyze.html',
+                                message=error,
+                                wrong_url=url), 422
 
     parsed_url = urlparse(url)
     normal_url = parsed_url.scheme + '://' + parsed_url.netloc
     with connect.cursor() as cur:
-        cur.execute('SELECT id FROM urls WHERE name = %s;', [normal_url])
+        cur.execute('''SELECT id FROM urls 
+                       WHERE name = %s;''', [normal_url])
         url_id = cur.fetchone()
         if url_id:
             flash('Страница уже существует', 'alert-info')
@@ -70,12 +81,14 @@ def show_urls():
         connect.commit()
         cur.execute('SELECT id FROM urls WHERE name = %s;', [normal_url])
         url_id = cur.fetchone()[0]
+    connect.close()
     flash('Страница успешно добавлена', 'alert-success')
     return redirect(url_for('watch_url', id=url_id), 302)
 
 
 @app.route('/urls/<int:id>')
 def watch_url(id):
+    connect = psycopg2.connect(db_url)
     with connect.cursor() as cur:
         cur.execute('SELECT * FROM urls WHERE id = %s;', [id])
         data = cur.fetchone()
@@ -85,14 +98,16 @@ def watch_url(id):
         cur.execute('''SELECT * FROM url_checks WHERE url_id = %s
                        ORDER BY id DESC;''', [id])
         checks = cur.fetchall()
+    connect.close()
     message = get_flashed_messages(with_categories=True)
     return render_template(
                'watch_url.html', data=data, checks=checks, message=message
-            )
+            ), 200
 
 
 @app.post('/urls/<int:id>/checks')
 def check_url(id):
+    connect = psycopg2.connect(db_url)
     created_at = datetime.now().date()
     with connect.cursor() as cur:
         cur.execute('SELECT name FROM urls WHERE id = %s;', [id])
@@ -109,12 +124,13 @@ def check_url(id):
         h1 = soup.h1.text if soup.h1 else ''
         title = soup.title.text if soup.title else ''
         desc = soup.find('meta', attrs={'name': 'description'})
-        desc = desc.get('content') if desc else ''
+        desc = desc.get('content')[:193] if desc else ''
         cur.execute('''
                 INSERT INTO url_checks
                 (url_id, status_code, h1, title, description, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s);
                 ''', [id, status_code, h1, title, desc, created_at])
         connect.commit()
+    connect.close()
     flash('Страница успешно проверена', 'alert-success')
     return redirect(url_for('watch_url', id=id), 302)
