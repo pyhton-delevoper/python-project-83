@@ -55,7 +55,7 @@ def show_urls():
 
     url = request.form.get('url')
     if not valid_url(url):
-        error = [('alert-danger', 'Неккоректный URL')]
+        error = [('alert-danger', 'Некорректный URL')]
         return render_template('analyze.html',
                                message=error,
                                wrong_url=url), 422
