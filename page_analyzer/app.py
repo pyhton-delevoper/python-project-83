@@ -76,8 +76,8 @@ def show_urls():
             return redirect(url_for('watch_url', id=url_id[0]), 302)
 
         created_at = datetime.now().date()
-        cur.execute('INSERT INTO urls (name, created_at) VALUES (%s, %s);',
-                    [normal_url, created_at])
+        cur.execute('''INSERT INTO urls (name, created_at)
+                       VALUES (%s, %s);''', [normal_url, created_at])
         connect.commit()
         cur.execute('SELECT id FROM urls WHERE name = %s;', [normal_url])
         url_id = cur.fetchone()[0]
@@ -95,14 +95,15 @@ def watch_url(id):
         if not data:
             return render_template('404.html'), 404
 
-        cur.execute('''SELECT * FROM url_checks WHERE url_id = %s
-                       ORDER BY id DESC;''', [id])
+        cur.execute('''SELECT * FROM url_checks
+                       WHERE url_id = %s ORDER BY id DESC;''', [id])
         checks = cur.fetchall()
     connect.close()
     message = get_flashed_messages(with_categories=True)
-    return render_template(
-               'watch_url.html', data=data, checks=checks, message=message
-            ), 200
+    return render_template('watch_url.html',
+                           data=data,
+                           checks=checks,
+                           message=message), 200
 
 
 @app.post('/urls/<int:id>/checks')
